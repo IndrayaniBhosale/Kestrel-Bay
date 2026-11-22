@@ -148,7 +148,11 @@ function OrderTable({ rows, onSelect }) {
 
 function action(r) {
   if (r.status === "too_late") {
-    const until = r.out_until ? ` until ~${fmtDate(r.out_until)}` : "";
+    const until = !r.out_until
+      ? ""
+      : r.out_until === r.new_order_arrives
+        ? ` until ~${fmtDate(r.out_until)} if you order today`
+        : ` until the open PO lands ~${fmtDate(r.out_until)}`;
     return `Order now. Expect to be out from ${fmtDate(r.runout_date)}${until}.`;
   }
   if (r.order_by < r.today_iso)
