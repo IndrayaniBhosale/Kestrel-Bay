@@ -215,7 +215,12 @@ function explanation(r) {
     lines.push("You're covered for the next 6 months.");
     return lines;
   }
-  lines.push(`At that rate you run out around ${fmtDateYear(r.runout_date)}.`);
+  if (r.runout_date === r.today_iso && r.open_orders_qty > r.sellable_now)
+    lines.push(
+      `You're already short: customers have booked ${qty(r.open_orders_qty, u)} but you can only sell ${qty(r.sellable_now, u)}.`
+    );
+  else if (r.runout_date === r.today_iso) lines.push("You're effectively out of stock now.");
+  else lines.push(`At that rate you run out around ${fmtDateYear(r.runout_date)}.`);
   if (r.status === "too_late") {
     lines.push(
       `A new order placed today arrives around ${fmtDateYear(r.new_order_arrives)}, too late. ` +
