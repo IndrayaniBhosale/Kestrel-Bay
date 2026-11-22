@@ -7,7 +7,9 @@ A one-screen inventory tool for Dana Okafor, VP Purchasing at Kestrel Bay Seafoo
 
 She can click any item to see why: the stock by lot, what's counted and why, the week-by-week forecast against last year, and the incoming POs. She can also mark an item "already handled" when she has ordered by phone and the PO isn't in BlueTide yet.
 
-**Live app:** _add link_  ·  **API docs:** _add link_/docs
+**Live app:** https://kestrel-bay-eight.vercel.app  ·  **API docs:** https://kestrel-bay-api.onrender.com/docs
+
+_The backend is on Render's free tier and sleeps when idle. The first load can take up to a minute._
 
 ## What it found (Nov 16, 2026)
 
@@ -107,4 +109,27 @@ npm run dev                       # http://localhost:5173
 
 ## How I used AI
 
-_Write this part in your own words. Cover what you asked Claude to do (data audit, cleaning and calculation code, UI), what you decided yourself, what you checked by hand (e.g. SHR-1620 run-out), and anything it got wrong that you caught or corrected._
+I used Claude (Anthropic) throughout this assignment.
+
+**Understanding the task.** I started by asking Claude to explain the project in plain terms and break it into small steps. I worked through the transcript with it to understand what Dana actually needs and what to leave out.
+
+**Data audit.** Claude went through every CSV against the transcript and listed the problems with row examples: duplicate codes, two nights in one export, pound vs. case units, stale PO dates, transfers and samples counted as sales, and mixed date formats.
+
+**Talking to the customer.** From the audit, I decided which questions to ask Dana and sent her one email with a default answer for each, so the build didn't have to wait. Her answers changed three rules in the app:
+- Late POs are not counted at all.
+- Salmon inside six months doesn't count as sellable stock.
+- Harbor cost is $30 per pallet per month.
+
+**Code.** Claude wrote most of the code: the cleaning, the calculations, the API and the React screen. I chose the stack, ran everything locally, and deployed it to Neon, Render and Vercel.
+
+**Decisions I made:**
+- Stack: FastAPI, React and Postgres, which I'm comfortable working in.
+- Scope: Dana's two questions only. Fresh fish, pricing and Marco's requests are out.
+- Which assumptions to confirm with Dana, and which to write down myself (see `docs/decisions.md`).
+- Forecast from the same weeks last year instead of last month, so December and Lent aren't missed.
+
+**Checking the numbers.**
+- I compared the cleaned totals against the raw CSVs, for example 16/20 shrimp: 480 sellable cases, excluding 80 on QA-HOLD.
+- I checked that the app tells the same story Dana described. Last year 16/20 shrimp ran out before Christmas, and the app flags the same risk this year.
+- Claude caught a real problem during the build: last year's stockout weeks showed zero sales. Copying them into the forecast would have repeated the stockout, so those weeks are filled from the weeks around them.
+- There are tests for the main business rules (`pytest`).
