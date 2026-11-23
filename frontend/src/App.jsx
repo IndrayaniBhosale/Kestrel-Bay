@@ -50,7 +50,7 @@ export default function App() {
         <SummaryCard tone="red" value={s.too_late} label="will run out before a new order can arrive" />
         <SummaryCard tone="amber" value={s.order_now} label="to order this week" />
         <SummaryCard tone="blue" value={s.order_soon} label="to order in the next 4 weeks" />
-        <SummaryCard tone="grey" value={money(s.stuck_value)} label="stuck: expired or under 6 months left" />
+        <SummaryCard tone="grey" value={money(s.stuck_value)} label="stuck with (at cost): too old, about to be, or discontinued" />
         <SummaryCard tone="grey" value={`${money(s.harbor_monthly_cost)}/mo`} label="paying Harbor Cold Storage" />
       </section>
 
