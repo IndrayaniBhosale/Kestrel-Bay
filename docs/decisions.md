@@ -43,7 +43,7 @@
 10. **Harbor pallets** are rounded up per item, since a part-full pallet still takes a slot.
 11. **Suggested order** = forecast demand for the weeks after a new order lands (8 weeks for imports, 4 for others, plus safety stock), minus the stock expected to be left then.
 
-## Open questions for Dana (next conversation)
+## Open questions (next conversation)
 
 These are still my assumptions. Each one changes the numbers a little, so I'd confirm them with Dana before relying on the app.
 
