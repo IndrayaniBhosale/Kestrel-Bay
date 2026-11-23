@@ -3,6 +3,7 @@ import { getDashboard } from "./api";
 import { fmtDate, fmtDateYear, money, qty, STUCK_KIND } from "./format";
 import ItemDetail from "./ItemDetail";
 import HowItWorks from "./HowItWorks";
+import { SeafoodIcon } from "./Icons";
 
 // Urgency groups for the order list, most urgent first.
 const GROUPS = [
@@ -117,9 +118,14 @@ export default function App() {
 function ItemCell({ r }) {
   return (
     <td className="item">
-      <span className="code">{r.item_code}</span>
-      {r.relies_on_late_po && <span className="tag tag-late">Relies on late PO</span>}
-      <span className="desc">{r.description}</span>
+      <div className="item-inner">
+        <SeafoodIcon itemCode={r.item_code} />
+        <div>
+          <span className="code">{r.item_code}</span>
+          {r.relies_on_late_po && <span className="tag tag-late">Relies on late PO</span>}
+          <span className="desc">{r.description}</span>
+        </div>
+      </div>
     </td>
   );
 }

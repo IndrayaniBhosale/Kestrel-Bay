@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getItem, markHandled, unmarkHandled } from "./api";
 import { fmtDate, fmtDateYear, money, qty, STATUS } from "./format";
+import { SeafoodIcon } from "./Icons";
 
 // The "why" view: everything behind an item's number, in plain language.
 export default function ItemDetail({ code, onClose, onChanged }) {
@@ -41,7 +42,10 @@ function Detail({ item: r, onChanged }) {
 
   return (
     <>
-      <h2>{r.item_code}</h2>
+      <div className="drawer-title">
+        <SeafoodIcon itemCode={r.item_code} size={40} />
+        <h2>{r.item_code}</h2>
+      </div>
       <p className="muted">
         {r.description} · {r.vendor_code}, {r.lead_days}-day lead time + {r.safety_days} days safety stock
       </p>

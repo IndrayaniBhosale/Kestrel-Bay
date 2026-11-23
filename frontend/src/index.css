@@ -86,7 +86,10 @@ td.action { max-width: 46ch; }
 .row:hover td { background: #f7fafc; }
 .row:focus-visible { outline: 2px solid var(--harbor); outline-offset: -2px; }
 
-.item { min-width: 220px; }
+.item { min-width: 240px; }
+.item-inner { display: flex; gap: 12px; align-items: flex-start; }
+.seafood-icon { flex: none; color: var(--harbor); margin-top: 1px; }
+.drawer-title { display: flex; align-items: center; gap: 12px; }
 .item .code { font-weight: 650; font-variation-settings: "wdth" 108; }
 .item .desc { display: block; font-size: 12.5px; color: var(--tide); letter-spacing: 0.01em; margin-top: 2px; }
 .reasons { font-size: 14px; }
