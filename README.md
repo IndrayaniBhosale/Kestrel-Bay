@@ -130,7 +130,7 @@ I used Claude (Anthropic) throughout this assignment.
 **Code.** Claude wrote most of the code: the cleaning, the calculations, the API and the React screen. I chose the stack, ran everything locally, and deployed it to Neon, Render and Vercel.
 
 **Decisions I made:**
-- Stack: FastAPI, React and Postgres, which I'm comfortable working in.
+- Stack: FastAPI, React and Postgres, standard tools that fit the task.
 - Scope: Dana's two questions only. Fresh fish, pricing and Marco's requests are out.
 - Which assumptions to confirm with Dana, and which to write down myself (see `docs/decisions.md`).
 - Forecast from the same weeks last year instead of last month, so December and Lent aren't missed.
