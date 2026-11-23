@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getDataNotes } from "./api";
+import { UrgencyIcon } from "./Icons";
 
 // Explains the rules and shows exactly what was filtered out of the BlueTide exports.
 export default function HowItWorks({ settings, onClose }) {
@@ -15,6 +16,18 @@ export default function HowItWorks({ settings, onClose }) {
           ×
         </button>
         <h2>How these numbers work</h2>
+
+        <h3>What the colours mean</h3>
+        <ul className="legend">
+          <li><span className="swatch tone-red"><UrgencyIcon kind="too_late" /> Red, too late</span> Runs out before an order placed today could arrive. Order now, or chase a late shipment.</li>
+          <li><span className="swatch tone-amber"><UrgencyIcon kind="order_now" /> Amber, this week</span> The order-by date is this week or has already passed.</li>
+          <li><span className="swatch tone-blue"><UrgencyIcon kind="order_soon" /> Blue, within 4 weeks</span> The order-by date is in the next four weeks.</li>
+          <li><span className="swatch tone-purple"><UrgencyIcon kind="late_po" /> Purple, relies on late PO</span> A PO is past its arrival date and isn't counted. The item is only covered if that shipment turns up.</li>
+          <li><span className="swatch tone-grey">Grey rows</span> On an item's page: lots that aren't counted (on hold, damaged, expired, or within six months of expiry).</li>
+          <li><span className="swatch tone-yellow">Yellow note</span> Last year the item sold almost nothing for a week because it was out of stock, so those weeks were filled from the weeks around them.</li>
+        </ul>
+
+        <h3>The rules</h3>
         <ol className="rules">
           <li>Only sellable stock counts: New Bedford, Providence and Harbor. QA-HOLD and DAMAGED don't.</li>
           <li>A lot stops counting {settings.six_month_rule} months before it expires. After that it's stock to discount or dump.</li>

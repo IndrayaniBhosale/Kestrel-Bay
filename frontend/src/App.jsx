@@ -3,7 +3,7 @@ import { getDashboard } from "./api";
 import { fmtDate, fmtDateYear, money, qty, STUCK_KIND } from "./format";
 import ItemDetail from "./ItemDetail";
 import HowItWorks from "./HowItWorks";
-import { SeafoodIcon } from "./Icons";
+import { SeafoodIcon, UrgencyIcon } from "./Icons";
 
 // Urgency groups for the order list, most urgent first.
 const GROUPS = [
@@ -44,7 +44,7 @@ export default function App() {
     <div className="page">
       <header className="masthead">
         <div>
-          <p className="brand">Kestrel Bay Seafood</p>
+          <h1 className="brand">Kestrel Bay Seafood: Monday ordering</h1>
           <p className="muted small">Frozen items, stock as of {fmtDateYear(s.today)}</p>
         </div>
         <button className="link" onClick={() => setShowHow(true)}>
@@ -53,14 +53,23 @@ export default function App() {
       </header>
 
       <section className="verdict" aria-label="This week">
-        <h1>
-          {s.too_late > 0
-            ? `${s.too_late} items will run out before a new order can land.`
-            : "Nothing runs out before a new order could land."}
-        </h1>
-        <p className="verdict-sub">
-          {s.order_now} more to order this week, {s.order_soon} within four weeks.
-        </p>
+        <div className="tiles">
+          <div className="tile tile-too_late">
+            <UrgencyIcon kind="too_late" size={22} />
+            <div className="tile-num">{s.too_late}</div>
+            <div className="tile-text">items will run out before a new order can land</div>
+          </div>
+          <div className="tile tile-order_now">
+            <UrgencyIcon kind="order_now" size={22} />
+            <div className="tile-num">{s.order_now}</div>
+            <div className="tile-text">more to order this week</div>
+          </div>
+          <div className="tile tile-order_soon">
+            <UrgencyIcon kind="order_soon" size={22} />
+            <div className="tile-num">{s.order_soon}</div>
+            <div className="tile-text">to order within the next four weeks</div>
+          </div>
+        </div>
         <dl className="ledger">
           <div>
             <dt>Stock you're stuck with, at cost</dt>
@@ -122,7 +131,11 @@ function ItemCell({ r }) {
         <SeafoodIcon itemCode={r.item_code} />
         <div>
           <span className="code">{r.item_code}</span>
-          {r.relies_on_late_po && <span className="tag tag-late">Relies on late PO</span>}
+          {r.relies_on_late_po && (
+            <span className="tag tag-late">
+              <UrgencyIcon kind="late_po" size={13} /> Relies on late PO
+            </span>
+          )}
           <span className="desc">{r.description}</span>
         </div>
       </div>
@@ -150,7 +163,7 @@ function OrderTable({ rows, onSelect }) {
             <tbody key={g.status} className={`group group-${g.status}`}>
               <tr className="group-head">
                 <th colSpan={4} scope="rowgroup">
-                  {g.title} <span className="count">{groupRows.length}</span>
+                  <UrgencyIcon kind={g.status} /> {g.title} <span className="count">{groupRows.length}</span>
                   <span className="group-note">{g.note}</span>
                 </th>
               </tr>
@@ -158,7 +171,9 @@ function OrderTable({ rows, onSelect }) {
                 <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="row" tabIndex={0}
                     onKeyDown={(e) => e.key === "Enter" && onSelect(r.item_code)}>
                   <ItemCell r={r} />
-                  <td className="date">{fmtDate(r.runout_date)}</td>
+                  <td className="date">
+                    <UrgencyIcon kind={r.status} size={14} /> {fmtDate(r.runout_date)}
+                  </td>
                   <td className="action">{action(r)}</td>
                   <td className="num">{r.suggested_order ? qty(r.suggested_order, r.uom) : "–"}</td>
                 </tr>

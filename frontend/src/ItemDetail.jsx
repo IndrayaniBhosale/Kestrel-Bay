@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getItem, markHandled, unmarkHandled } from "./api";
 import { fmtDate, fmtDateYear, money, qty, STATUS } from "./format";
-import { SeafoodIcon } from "./Icons";
+import { SeafoodIcon, UrgencyIcon } from "./Icons";
 
 // The "why" view: everything behind an item's number, in plain language.
 export default function ItemDetail({ code, onClose, onChanged }) {
@@ -49,8 +49,16 @@ function Detail({ item: r, onChanged }) {
       <p className="muted">
         {r.description} · {r.vendor_code}, {r.lead_days}-day lead time + {r.safety_days} days safety stock
       </p>
-      {r.in_scope && <span className={`badge tone-${st.tone}`}>{st.label}</span>}
-      {r.relies_on_late_po && <span className="badge tone-purple">Relies on a late PO</span>}
+      {r.in_scope && (
+        <span className={`badge tone-${st.tone}`}>
+          {r.status !== "ok" && <UrgencyIcon kind={r.status} size={13} />} {st.label}
+        </span>
+      )}
+      {r.relies_on_late_po && (
+        <span className="badge tone-purple">
+          <UrgencyIcon kind="late_po" size={13} /> Relies on a late PO
+        </span>
+      )}
       {r.discontinued && <span className="badge tone-grey">Discontinued</span>}
 
       <div className="explain">
@@ -199,9 +207,23 @@ function explanation(r) {
   const u = r.uom;
   const lines = [];
   lines.push(
-    `You can sell ${qty(r.sellable_now, u)}. Customers have already booked ${qty(r.open_orders_qty, u)} of it.` +
-      (r.on_hold_qty > 0 ? ` A further ${qty(r.on_hold_qty, u)} on hold or damaged isn't counted.` : "")
+    `You can sell ${qty(r.sellable_now, u)}. Customers have already booked ${qty(r.open_orders_qty, u)}` +
+      (r.open_orders_qty > r.sellable_now ? ", which is more than you can sell." : ".")
   );
+  // Say why stock that's physically there isn't counted.
+  const sum = (pred) => r.lots.filter(pred).reduce((t, l) => t + l.qty, 0);
+  const inside6 = sum((l) => !l.counts && l.reason.startsWith("Less than 6 months"));
+  const expired = sum((l) => !l.counts && l.reason === "Expired");
+  const onHold = sum((l) => l.location === "QA-HOLD");
+  const damaged = sum((l) => l.location === "DAMAGED");
+  if (inside6 > 0)
+    lines.push(
+      `${qty(inside6, u)} ${inside6 === 1 ? "is" : "are"} within six months of expiry, so they aren't counted. You said customers won't take it, so it gets discounted or dumped.`
+    );
+  if (expired > 0) lines.push(`${qty(expired, u)} already expired and aren't counted.`);
+  if (onHold > 0)
+    lines.push(`${qty(onHold, u)} on QA-HOLD (waiting on paperwork or a temperature check) aren't counted until released.`);
+  if (damaged > 0) lines.push(`${qty(damaged, u)} marked DAMAGED aren't counted.`);
   if (r.discontinued) {
     lines.push("This item is discontinued, so no future sales are forecast. Anything left is stock to clear.");
     return lines;
@@ -219,11 +241,9 @@ function explanation(r) {
     lines.push("You're covered for the next 6 months.");
     return lines;
   }
-  if (r.runout_date === r.today_iso && r.open_orders_qty > r.sellable_now)
-    lines.push(
-      `You're already short: customers have booked ${qty(r.open_orders_qty, u)} but you can only sell ${qty(r.sellable_now, u)}.`
-    );
-  else if (r.runout_date === r.today_iso) lines.push("You're effectively out of stock now.");
+  if (r.runout_date === r.today_iso && r.open_orders_qty > r.sellable_now) {
+    // Already said in the first sentence.
+  } else if (r.runout_date === r.today_iso) lines.push("You're effectively out of stock now.");
   else lines.push(`At that rate you run out around ${fmtDateYear(r.runout_date)}.`);
   if (r.status === "too_late") {
     lines.push(

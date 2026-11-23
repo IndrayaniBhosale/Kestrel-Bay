@@ -83,3 +83,42 @@ export function SeafoodIcon({ itemCode, size = 30 }) {
     </svg>
   );
 }
+
+// Urgency symbols: shape as well as colour, so the meaning survives without colour.
+const URGENCY = {
+  too_late: ( // warning triangle
+    <>
+      <path d="M12 3.5L22 20.5H2z" fill="currentColor" stroke="currentColor" />
+      <path d="M12 9.5v5" stroke="#fff" strokeWidth="2.2" />
+      <circle cx="12" cy="17.4" r="1.2" fill="#fff" stroke="none" />
+    </>
+  ),
+  order_now: ( // clock
+    <>
+      <circle cx="12" cy="12" r="9.5" fill="currentColor" stroke="currentColor" />
+      <path d="M12 6.5V12l3.6 2.4" stroke="#fff" strokeWidth="2" />
+    </>
+  ),
+  order_soon: ( // calendar
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" fill="none" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
+  late_po: ( // ship on the water
+    <>
+      <path d="M4 14h16l-2.5 4.5h-11z" />
+      <path d="M8 14V9h6l2 5M11 9V6" />
+      <path d="M3 21c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0 3 1 4.5 0" />
+    </>
+  ),
+};
+
+export function UrgencyIcon({ kind, size = 16 }) {
+  return (
+    <svg className={`urgency-icon urgency-${kind}`} width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {URGENCY[kind]}
+    </svg>
+  );
+}
