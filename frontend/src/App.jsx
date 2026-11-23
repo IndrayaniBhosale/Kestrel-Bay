@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { getDashboard } from "./api";
-import { fmtDate, fmtDateYear, money, qty, STATUS, STUCK_KIND } from "./format";
+import { fmtDate, fmtDateYear, money, qty, STUCK_KIND } from "./format";
 import ItemDetail from "./ItemDetail";
 import HowItWorks from "./HowItWorks";
+
+// Urgency groups for the order list, most urgent first.
+const GROUPS = [
+  { status: "too_late", title: "Too late", note: "runs out before a new order could arrive" },
+  { status: "order_now", title: "Order this week", note: "order-by date is this week or already past" },
+  { status: "order_soon", title: "Order within 4 weeks", note: "order-by date is in the next four weeks" },
+];
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -23,10 +30,10 @@ export default function App() {
     return (
       <div className="page">
         <p className="error">Couldn't load the data: {error}</p>
-        <p className="muted">If the app was idle, the server may take up to a minute to wake up. Try refreshing.</p>
+        <p className="muted">If the app was idle, the server takes up to a minute to wake up. Refresh the page to try again.</p>
       </div>
     );
-  if (!data) return <div className="page muted">Loading… (first load can take up to a minute)</div>;
+  if (!data) return <div className="page muted">Loading this week's numbers. The first load can take up to a minute.</div>;
 
   const s = data.summary;
   const open = data.orders.filter((o) => !o.handled);
@@ -34,47 +41,59 @@ export default function App() {
 
   return (
     <div className="page">
-      <header className="top">
+      <header className="masthead">
         <div>
-          <h1>Monday ordering</h1>
-          <p className="muted">
-            Kestrel Bay Seafood · frozen items · data as of {fmtDateYear(s.today)}
-          </p>
+          <p className="brand">Kestrel Bay Seafood</p>
+          <p className="muted small">Frozen items, stock as of {fmtDateYear(s.today)}</p>
         </div>
         <button className="link" onClick={() => setShowHow(true)}>
           How these numbers work
         </button>
       </header>
 
-      <section className="cards">
-        <SummaryCard tone="red" value={s.too_late} label="will run out before a new order can arrive" />
-        <SummaryCard tone="amber" value={s.order_now} label="to order this week" />
-        <SummaryCard tone="blue" value={s.order_soon} label="to order in the next 4 weeks" />
-        <SummaryCard tone="grey" value={money(s.stuck_value)} label="stuck with (at cost): too old, about to be, or discontinued" />
-        <SummaryCard tone="grey" value={`${money(s.harbor_monthly_cost)}/mo`} label="paying Harbor Cold Storage" />
+      <section className="verdict" aria-label="This week">
+        <h1>
+          {s.too_late > 0
+            ? `${s.too_late} items will run out before a new order can land.`
+            : "Nothing runs out before a new order could land."}
+        </h1>
+        <p className="verdict-sub">
+          {s.order_now} more to order this week, {s.order_soon} within four weeks.
+        </p>
+        <dl className="ledger">
+          <div>
+            <dt>Stock you're stuck with, at cost</dt>
+            <dd>{money(s.stuck_value)}</dd>
+          </div>
+          <div>
+            <dt>Harbor Cold Storage rent</dt>
+            <dd>
+              {money(s.harbor_monthly_cost)}
+              <span className="unit"> a month</span>
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <section>
-        <h2>1. What to order</h2>
-        <p className="muted small">
-          Counts only stock you can sell, minus orders already booked, plus POs on the way. Late POs are not counted.
-          Click any item to see why.
+        <h2>What to order</h2>
+        <p className="lede">
+          Counts only stock you can sell, takes out orders already booked, and adds POs that are on their way. Late POs
+          aren't counted. Click any item to see the working.
         </p>
         <OrderTable rows={open} onSelect={setSelected} />
         {handled.length > 0 && (
           <details className="handled">
-            <summary>
-              Marked as handled ({handled.length})
-            </summary>
+            <summary>Marked as already ordered ({handled.length})</summary>
             <OrderTable rows={handled} onSelect={setSelected} />
           </details>
         )}
       </section>
 
       <section>
-        <h2>2. What you're stuck with</h2>
-        <p className="muted small">
-          Lots inside six months of expiry (discount or dump), expired lots, lots that will hit the six-month line
+        <h2>What you're stuck with</h2>
+        <p className="lede">
+          Lots with under six months left (discount or dump), expired lots, lots that will reach the six-month line
           before they sell, and discontinued items still on hand.
         </p>
         <StuckTable rows={data.stuck} onSelect={setSelected} />
@@ -82,30 +101,26 @@ export default function App() {
 
       <section>
         <h2>Harbor Cold Storage</h2>
-        <p className="muted small">
-          $30 per pallet per month, about 50 cases per pallet. Total {money(s.harbor_monthly_cost)} a month.
+        <p className="lede">
+          $30 per pallet per month, about 50 cases per pallet, part-full pallets rounded up. {money(s.harbor_monthly_cost)}{" "}
+          a month in total.
         </p>
         <HarborTable rows={data.harbor} onSelect={setSelected} />
       </section>
 
-      {selected && (
-        <ItemDetail
-          code={selected}
-          onClose={() => setSelected(null)}
-          onChanged={load}
-        />
-      )}
+      {selected && <ItemDetail code={selected} onClose={() => setSelected(null)} onChanged={load} />}
       {showHow && <HowItWorks settings={data.settings} onClose={() => setShowHow(false)} />}
     </div>
   );
 }
 
-function SummaryCard({ tone, value, label }) {
+function ItemCell({ r }) {
   return (
-    <div className={`card tone-${tone}`}>
-      <div className="card-value">{value}</div>
-      <div className="card-label">{label}</div>
-    </div>
+    <td className="item">
+      <span className="code">{r.item_code}</span>
+      {r.relies_on_late_po && <span className="tag tag-late">Relies on late PO</span>}
+      <span className="desc">{r.description}</span>
+    </td>
   );
 }
 
@@ -113,34 +128,38 @@ function OrderTable({ rows, onSelect }) {
   if (!rows.length) return <p className="muted">Nothing to order right now.</p>;
   return (
     <div className="table-wrap">
-      <table>
+      <table className="orders">
         <thead>
           <tr>
             <th>Item</th>
-            <th>Status</th>
             <th>Runs out</th>
             <th>What to do</th>
             <th className="num">Suggested order</th>
           </tr>
         </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="clickable">
-              <td>
-                <div className="item-code">{r.item_code}</div>
-                <div className="muted small">{r.description}</div>
-              </td>
-              <td>
-                <span className={`badge tone-${STATUS[r.status].tone}`}>{STATUS[r.status].short}</span>
-                {r.relies_on_late_po && <span className="badge tone-purple">Relies on late PO</span>}
-                {r.handled && <span className="badge tone-grey">Handled</span>}
-              </td>
-              <td>{fmtDate(r.runout_date)}</td>
-              <td className="small">{action(r)}</td>
-              <td className="num">{r.suggested_order ? qty(r.suggested_order, r.uom) : "—"}</td>
-            </tr>
-          ))}
-        </tbody>
+        {GROUPS.map((g) => {
+          const groupRows = rows.filter((r) => r.status === g.status);
+          if (!groupRows.length) return null;
+          return (
+            <tbody key={g.status} className={`group group-${g.status}`}>
+              <tr className="group-head">
+                <th colSpan={4} scope="rowgroup">
+                  {g.title} <span className="count">{groupRows.length}</span>
+                  <span className="group-note">{g.note}</span>
+                </th>
+              </tr>
+              {groupRows.map((r) => (
+                <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="row" tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && onSelect(r.item_code)}>
+                  <ItemCell r={r} />
+                  <td className="date">{fmtDate(r.runout_date)}</td>
+                  <td className="action">{action(r)}</td>
+                  <td className="num">{r.suggested_order ? qty(r.suggested_order, r.uom) : "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+          );
+        })}
       </table>
     </div>
   );
@@ -170,20 +189,18 @@ function StuckTable({ rows, onSelect }) {
         <thead>
           <tr>
             <th>Item</th>
-            <th>Why</th>
+            <th>Why it's stuck</th>
             <th className="num">Quantity</th>
             <th className="num">Cost value</th>
-            <th className="num">Harbor / month</th>
+            <th className="num">Harbor a month</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="clickable">
-              <td>
-                <div className="item-code">{r.item_code}</div>
-                <div className="muted small">{r.description}</div>
-              </td>
-              <td className="small">
+            <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="row" tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && onSelect(r.item_code)}>
+              <ItemCell r={r} />
+              <td className="reasons">
                 {r.reasons.map((x, i) => (
                   <div key={i}>
                     {STUCK_KIND[x.kind]}: {qty(x.qty, r.uom)} at {x.location}
@@ -194,7 +211,7 @@ function StuckTable({ rows, onSelect }) {
               </td>
               <td className="num">{qty(r.stuck_qty, r.uom)}</td>
               <td className="num">{money(r.stuck_value)}</td>
-              <td className="num">{r.harbor_monthly_cost ? money(r.harbor_monthly_cost) : "—"}</td>
+              <td className="num">{r.harbor_monthly_cost ? money(r.harbor_monthly_cost) : "–"}</td>
             </tr>
           ))}
         </tbody>
@@ -213,16 +230,14 @@ function HarborTable({ rows, onSelect }) {
             <th className="num">At Harbor</th>
             <th className="num">Still sellable</th>
             <th className="num">Weeks of stock (all locations)</th>
-            <th className="num">Cost / month</th>
+            <th className="num">Rent a month</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="clickable">
-              <td>
-                <div className="item-code">{r.item_code}</div>
-                <div className="muted small">{r.description}</div>
-              </td>
+            <tr key={r.item_code} onClick={() => onSelect(r.item_code)} className="row" tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && onSelect(r.item_code)}>
+              <ItemCell r={r} />
               <td className="num">{qty(r.harbor_qty, r.uom)}</td>
               <td className="num">{qty(r.sellable_at_harbor, r.uom)}</td>
               <td className="num">{r.weeks_of_cover ?? "no sales"}</td>
