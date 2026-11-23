@@ -120,8 +120,6 @@ npm run dev                       # http://localhost:5173
 
 I used Claude (Anthropic) throughout this assignment.
 
-**Understanding the task.** I started by asking Claude to explain the project in plain terms and break it into small steps. I worked through the transcript with it to understand what Dana actually needs and what to leave out.
-
 **Data audit.** Claude went through every CSV against the transcript and listed the problems with row examples: duplicate codes, two nights in one export, pound vs. case units, stale PO dates, transfers and samples counted as sales, and mixed date formats.
 
 **Talking to the customer.** From the audit, I decided which questions to ask Dana and sent her one email with a default answer for each, so the build didn't have to wait. Her answers changed three rules in the app:
