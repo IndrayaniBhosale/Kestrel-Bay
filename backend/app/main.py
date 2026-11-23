@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from . import db, settings
@@ -92,8 +92,9 @@ def data_notes():
 
 
 class HandledIn(BaseModel):
-    note: str = ""
-    days: int = 14
+    """What Dana sends when she marks an item as already ordered."""
+    note: str = Field("", max_length=200, description="e.g. 'Ordered by phone Tue, 400 cs'")
+    days: int = Field(14, ge=1, le=90, description="How long to hide the item (1-90 days)")
 
 
 @app.post("/api/items/{code}/handled")

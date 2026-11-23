@@ -88,7 +88,7 @@ python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env              # then put your Postgres URL in .env
 python -m scripts.load_data       # load the CSVs in /data
-pytest                            # business-rule tests
+pytest                            # business-rule and API tests
 uvicorn app.main:app --reload     # http://localhost:8000/docs
 
 # Frontend (second terminal)
@@ -139,6 +139,6 @@ I used Claude (Anthropic) throughout this assignment.
 - I compared the cleaned totals against the raw CSVs, for example 16/20 shrimp: 480 sellable cases, excluding 80 on QA-HOLD.
 - I checked that the app tells the same story Dana described. Last year 16/20 shrimp ran out before Christmas, and the app flags the same risk this year.
 - Claude caught a real problem during the build: last year's stockout weeks showed zero sales. Copying them into the forecast would have repeated the stockout, so those weeks are filled from the weeks around them.
-- There are tests for the main business rules (`pytest`).
+- There are tests for the main business rules and for the API endpoints (`pytest`, 16 tests). The endpoint tests use an in-memory stand-in for the database, so they never touch the live data.
 
 **Reviewing the screen as Dana would.** I clicked through the app as a non-technical buyer and asked for changes where it didn't read clearly: a cleaner design, urgency blocks with symbols as well as colours, a colour guide, small seafood icons, and plain sentences explaining why stock isn't counted (for example, salmon within six months of expiry). While testing I found that marking an item as "already ordered" removed it from the list but not from the counts at the top, and had that fixed.
