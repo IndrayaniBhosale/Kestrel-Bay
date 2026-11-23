@@ -147,6 +147,8 @@ function OrderTable({ rows, onSelect }) {
 }
 
 function action(r) {
+  if (r.status === "too_late" && r.out_until && r.out_until !== r.new_order_arrives && r.gap_days <= 7)
+    return `Tight: runs out ~${fmtDate(r.runout_date)}, open PO lands ~${fmtDate(r.out_until)}. Chase the vendor; a new order wouldn't arrive sooner.`;
   if (r.status === "too_late") {
     const until = !r.out_until
       ? ""
@@ -210,7 +212,7 @@ function HarborTable({ rows, onSelect }) {
             <th>Item</th>
             <th className="num">At Harbor</th>
             <th className="num">Still sellable</th>
-            <th className="num">Weeks of stock</th>
+            <th className="num">Weeks of stock (all locations)</th>
             <th className="num">Cost / month</th>
           </tr>
         </thead>

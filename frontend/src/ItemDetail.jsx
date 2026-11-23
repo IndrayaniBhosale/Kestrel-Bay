@@ -225,7 +225,7 @@ function explanation(r) {
     lines.push(
       `A new order placed today arrives around ${fmtDateYear(r.new_order_arrives)}, too late. ` +
         (r.out_until
-          ? `Expect to be out from ${fmtDate(r.runout_date)} until about ${fmtDate(r.out_until)} (${r.gap_days} days)` +
+          ? `Expect to be out from ${fmtDate(r.runout_date)} until about ${fmtDate(r.out_until)} (${r.gap_days} ${r.gap_days === 1 ? "day" : "days"})` +
             (r.out_until === r.new_order_arrives ? ", and only if you order today." : ", when the open PO lands.")
           : "")
     );
