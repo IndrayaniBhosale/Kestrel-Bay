@@ -42,3 +42,17 @@
 9. **Mixed date formats.** 51 sales lines use MM/DD/YYYY. They're January 2026 dates: the ship dates follow 1–3 days later, and the order numbers fit the January sequence.
 10. **Harbor pallets** are rounded up per item, since a part-full pallet still takes a slot.
 11. **Suggested order** = forecast demand for the weeks after a new order lands (8 weeks for imports, 4 for others, plus safety stock), minus the stock expected to be left then.
+
+## Open questions for Dana (next conversation)
+
+These are still my assumptions. Each one changes the numbers a little, so I'd confirm them with Dana before relying on the app.
+
+| Question | What the app assumes today | What changes if the answer is different |
+|---|---|---|
+| When an item sold almost nothing for a week last year, was that because you were out of stock? | Yes, if a week is under 15% of the item's normal week. That week is replaced with the average of the weeks around it. | The forecast for those weeks (16/20 shrimp in late December) would drop, and run-out dates would move later. |
+| Does the warehouse always ship the oldest-expiring lot first? | Yes. | Which lot crosses the six-month line unsold, and so the "stuck" quantities. |
+| Should returns reduce demand? | No. Returns (credits) are left out. | Demand would be slightly lower for items with many returns. |
+| How much should a suggested order cover after it lands? | 8 weeks for imports, 4 weeks for others, plus safety stock. | Suggested quantities only. Run-out and order-by dates don't change. |
+| Will the older customer orders still marked open (booked Nov 9–15) still ship? | Yes. They're taken out of stock now. | Items with large open orders would have more stock available. |
+| Is the business growing or shrinking compared with last year? | Flat (no adjustment). This November looks about 15% lower than last November so far. | The forecast may run slightly high. A growth factor per item or category would fix it. |
+| Does a QA-HOLD lot usually pass? | It's ignored until released. | Items like haddock fillet (300 cases on hold) would look less urgent. |
