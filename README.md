@@ -5,7 +5,7 @@ A one-screen inventory tool for Dana Okafor, VP Purchasing at Kestrel Bay Seafoo
 1. **What will run out before a new order could get here?** It uses real lead times, counts only stock she can sell, and takes out orders already booked.
 2. **What is she stuck with?** That means lots inside six months of expiry, expired lots, lots that will hit the six-month line before they sell, discontinued items, and what Harbor Cold Storage is costing each month.
 
-She can click any item to see why: the stock by lot, what's counted and why, the week-by-week forecast against last year, and the incoming POs. She can also mark an item "already handled" when she has ordered by phone and the PO isn't in BlueTide yet.
+She can click any item to see why: plain sentences explaining the number, the stock by lot (what's counted, and why not), the week-by-week forecast against last year, and the incoming POs. She can also mark an item "already ordered" when she has ordered by phone and the PO isn't in BlueTide yet. It then drops off the list and out of the counts at the top.
 
 **Live app:** https://kestrel-bay-eight.vercel.app  ·  **API docs:** https://kestrel-bay-api.onrender.com/docs
 
@@ -16,7 +16,7 @@ _The backend is on Render's free tier and sleeps when idle. The first load can t
 - **8 items will run out before a new order can arrive.** Examples:
   - 16/20 shrimp runs out around Dec 10, and the next PO lands about Jan 25. That's the same December stockout as last year.
   - 6oz salmon: all 1,350 cases are already inside six months, so there's nothing sellable at full price.
-- **About $134k of stock (at cost)** is expired or inside six months. Most of it is Chilean salmon at Harbor.
+- **About $134k of stock (at cost)** is too old, about to be, or discontinued. About $125k of it is the summer's Chilean salmon.
 - **Harbor costs about $1,470 a month**, about $900 of it for salmon that now has to be discounted.
 
 ## How it works
@@ -32,8 +32,16 @@ _The backend is on Render's free tier and sleeps when idle. The first load can t
 - **Status:**
   - *Too late:* the run-out comes before an order placed today could arrive.
   - *Order this week:* the order-by date is within 7 days or already past.
-  - *Order soon:* the order-by date is within 28 days.
+  - *Order within 4 weeks:* the order-by date is within 28 days.
 - **Late POs:** POs past both the vendor's date and the real lead time aren't counted. If an item would be fine only with a late PO, it's flagged "Relies on late PO."
+
+**Screen** (`frontend/src/`):
+
+- **Three blocks at the top** count what needs action: too late (red), order this week (amber), order within 4 weeks (blue). Items marked as already ordered aren't counted. Below them: the cost of stock she's stuck with, and Harbor's monthly rent.
+- **The order list is grouped by urgency.** Each colour comes with a symbol (warning triangle, clock, calendar; a ship for late POs), so it still reads without colour.
+- **Every item opens a panel** that explains the number in sentences, then shows the figures behind it.
+- **"How these numbers work"** explains the colours, lists every rule, the lead times used, and how many rows each cleaning rule removed.
+- No charts or dashboards on purpose: Dana said she'd go back to Excel if it didn't make sense within a minute. Small line drawings (shrimp, salmon, crab...) help her scan the list. One typeface (Archivo), bundled with the app so it loads on any network.
 
 Key assumptions and Dana's answers are in [docs/decisions.md](docs/decisions.md).
 
@@ -56,6 +64,7 @@ The data is small (about 16k rows), so the calculation runs in memory once at st
 | POST | `/api/items/{code}/handled` | Mark handled `{note, days}` |
 | DELETE | `/api/items/{code}/handled` | Undo |
 | GET | `/api/data-notes` | What the cleaning removed, with counts |
+| GET | `/api/health` | Checks the backend can reach the database |
 
 ### Data model
 
@@ -133,3 +142,5 @@ I used Claude (Anthropic) throughout this assignment.
 - I checked that the app tells the same story Dana described. Last year 16/20 shrimp ran out before Christmas, and the app flags the same risk this year.
 - Claude caught a real problem during the build: last year's stockout weeks showed zero sales. Copying them into the forecast would have repeated the stockout, so those weeks are filled from the weeks around them.
 - There are tests for the main business rules (`pytest`).
+
+**Reviewing the screen as Dana would.** I clicked through the app as a non-technical buyer and asked for changes where it didn't read clearly: a cleaner design, urgency blocks with symbols as well as colours, a colour guide, small seafood icons, and plain sentences explaining why stock isn't counted (for example, salmon within six months of expiry). While testing I found that marking an item as "already ordered" removed it from the list but not from the counts at the top, and had that fixed.
