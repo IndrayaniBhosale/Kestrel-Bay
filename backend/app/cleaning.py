@@ -84,6 +84,17 @@ def to_sell_uom(qty, uom, sell_uom, lb_per_case):
     return None
 
 
+def cost_per_sell_uom(cost, uom, sell_uom, lb_per_case):
+    """Unit cost in the item's selling unit. The opposite direction of to_sell_uom."""
+    if pd.isna(cost) or uom == sell_uom:
+        return cost
+    if uom == "LB" and sell_uom == "CS":
+        return round(cost * lb_per_case, 4)
+    if uom == "CS" and sell_uom == "LB":
+        return round(cost / lb_per_case, 4)
+    return cost
+
+
 def clean_lots(items: pd.DataFrame):
     raw = pd.read_csv(DATA_DIR / "inventory_on_hand.csv", dtype={"lot_no": str})
     notes = []
@@ -108,6 +119,10 @@ def clean_lots(items: pd.DataFrame):
     df["uom_raw"] = df["uom"]
     df["qty"] = [to_sell_uom(q, u, s, l) for q, u, s, l in
                  zip(df["qty"], df["uom"], df["sell_uom"], df["lb_per_case"])]
+    # The cost is per the lot's own unit, so convert it the same way: a lot received in pounds at
+    # $2.71/lb is worth $2.71 x pounds-per-case for each case.
+    df["unit_cost"] = [cost_per_sell_uom(c, u, s, l) for c, u, s, l in
+                       zip(df["unit_cost"], df["uom_raw"], df["sell_uom"], df["lb_per_case"])]
     converted = (df["uom_raw"] != df["sell_uom"]).sum()
     notes.append(("Lots converted between pounds and cases", int(converted),
                   "Received in a different unit than the item is sold in; converted using pack size"))

@@ -77,3 +77,11 @@ def test_cleaning_matches_raw_files():
     sales = t["sales"]
     assert not sales["customer_code"].isin(["INT01", "CRU01"]).any()
     assert (sales["qty"] > 0).all()
+
+
+def test_cost_converted_with_quantity():
+    t = load_all()
+    lot = t["lots"][t["lots"]["lot_no"] == "L261005-02"].iloc[0]   # calamari received as 132 lb at $2.71/lb
+    assert lot["qty"] == 10                                         # 132 lb / 13.2 lb per case
+    assert round(lot["unit_cost"], 2) == round(2.71 * 13.2, 2)     # cost per case, not per lb
+    assert round(lot["qty"] * lot["unit_cost"], 2) == round(132 * 2.71, 2)  # value unchanged
