@@ -70,6 +70,7 @@ body { margin: 0; }
 .tile-order_now { --tile-colour: var(--signal); --tile-wash: var(--signal-wash); }
 .tile-order_soon { --tile-colour: var(--harbor); --tile-wash: #e9f1f8; }
 
+.tiles-note { margin: 10px 0 0; font-size: 13px; color: var(--tide); }
 .urgency-icon { vertical-align: -2px; flex: none; }
 .urgency-too_late { color: var(--buoy); }
 .urgency-order_now { color: var(--signal); }

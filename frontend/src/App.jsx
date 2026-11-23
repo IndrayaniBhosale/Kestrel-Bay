@@ -39,6 +39,8 @@ export default function App() {
   const s = data.summary;
   const open = data.orders.filter((o) => !o.handled);
   const handled = data.orders.filter((o) => o.handled);
+  // The blocks count what's still on the list, so marking an item as ordered takes it off the count.
+  const count = (status) => open.filter((o) => o.status === status).length;
 
   return (
     <div className="page">
@@ -56,20 +58,25 @@ export default function App() {
         <div className="tiles">
           <div className="tile tile-too_late">
             <UrgencyIcon kind="too_late" size={22} />
-            <div className="tile-num">{s.too_late}</div>
+            <div className="tile-num">{count("too_late")}</div>
             <div className="tile-text">items will run out before a new order can land</div>
           </div>
           <div className="tile tile-order_now">
             <UrgencyIcon kind="order_now" size={22} />
-            <div className="tile-num">{s.order_now}</div>
+            <div className="tile-num">{count("order_now")}</div>
             <div className="tile-text">more to order this week</div>
           </div>
           <div className="tile tile-order_soon">
             <UrgencyIcon kind="order_soon" size={22} />
-            <div className="tile-num">{s.order_soon}</div>
+            <div className="tile-num">{count("order_soon")}</div>
             <div className="tile-text">to order within the next four weeks</div>
           </div>
         </div>
+        {handled.length > 0 && (
+          <p className="tiles-note">
+            Not counted above: {handled.length} {handled.length === 1 ? "item" : "items"} you marked as already ordered.
+          </p>
+        )}
         <dl className="ledger">
           <div>
             <dt>Stock you're stuck with, at cost</dt>
