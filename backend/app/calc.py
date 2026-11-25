@@ -230,6 +230,7 @@ class Engine:
 
         sellable_now = sum(b.qty for b in start)
         status, order_by, gap_days, suggested = "ok", None, None, None
+        suggestion_math = None
         new_order_arrives = TODAY + timedelta(days=lead)
         if proj.runout and item["in_scope"]:
             order_by = proj.runout - timedelta(days=lead + safety)
@@ -245,6 +246,10 @@ class Engine:
             have = proj.end_stock[i0 - 1] if i0 > 0 else sellable_now
             if status != "ok":
                 suggested = round_order(need - have, uom)
+                # Show the working, so Dana can see where the number comes from.
+                suggestion_math = {"lands": new_order_arrives, "cover_days": cover, "safety_days": safety,
+                                   "covers_until": new_order_arrives + timedelta(days=cover + safety),
+                                   "need": round(need, 1), "have_when_it_lands": round(have, 1)}
         # If we run out, until when? The next PO already on the way, or a new order placed today.
         out_until = None
         if proj.runout:
@@ -254,6 +259,8 @@ class Engine:
                 gap_days = (out_until - proj.runout).days
         relies_on_late = bool(late) and status != "ok" and (
             proj_with_late.runout is None or proj_with_late.runout > proj.runout)
+
+        history, history_summary = self._order_history(code)
 
         weekly = []
         for w in range(16):
@@ -280,6 +287,8 @@ class Engine:
             "runout_date": proj.runout, "runout_with_late_pos": proj_with_late.runout,
             "order_by": order_by, "status": status, "gap_days": gap_days, "out_until": out_until,
             "relies_on_late_po": relies_on_late, "suggested_order": suggested,
+            "suggestion_math": suggestion_math,
+            "order_history": history, "order_history_summary": history_summary,
             "new_order_arrives": new_order_arrives,
             "harbor_qty": round(stock_at_harbor, 1), "harbor_monthly_cost": harbor_monthly_cost(stock_at_harbor),
             "lots": lot_rows, "pos": po_rows,
@@ -289,6 +298,27 @@ class Engine:
             "recent_2_weeks": self._actual(code, TODAY - timedelta(days=14), 14),
             "same_2_weeks_last_year": self._actual(code, TODAY - timedelta(days=14 + 364), 14),
             "forecast_method": fc.method, "stockout_weeks_filled": fc.filled_weeks,
+        }
+
+    def _order_history(self, code):
+        """Every PO for this item, newest first, plus what a typical order looks like."""
+        h = self.t.get("po_history")
+        if h is None or h.empty:
+            return [], None
+        h = h[h["item_code"] == code].sort_values("order_date", ascending=False)
+        rows = [{"po_no": p["po_no"], "order_date": p["order_date"], "status": p["status"],
+                 "qty_ordered": round(float(p["qty_ordered"]), 1),
+                 "qty_received": round(float(p["qty_received"]), 1)} for _, p in h.iterrows()]
+        if not rows:
+            return [], None
+        dates = sorted({r["order_date"] for r in rows})
+        gaps = [(b - a).days for a, b in zip(dates, dates[1:])]
+        sizes = sorted(r["qty_ordered"] for r in rows)
+        return rows, {
+            "orders": len(rows),
+            "last_order_date": rows[0]["order_date"], "last_order_qty": rows[0]["qty_ordered"],
+            "typical_qty": sizes[len(sizes) // 2],                      # median order size
+            "typical_gap_days": sorted(gaps)[len(gaps) // 2] if gaps else None,  # median days between orders
         }
 
     def _actual(self, code, start: date, days: int) -> float:

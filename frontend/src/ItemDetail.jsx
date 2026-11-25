@@ -185,6 +185,37 @@ function Detail({ item: r, onChanged }) {
         </>
       )}
 
+      {r.order_history?.length > 0 && (
+        <details className="weekly">
+          <summary>Order history ({r.order_history.length} POs)</summary>
+          <div className="table-wrap">
+            <table className="compact">
+              <thead>
+                <tr>
+                  <th>Ordered</th>
+                  <th>PO</th>
+                  <th>Status</th>
+                  <th className="num">Ordered</th>
+                  <th className="num">Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                {r.order_history.map((p) => (
+                  <tr key={p.po_no + p.order_date}>
+                    <td>{fmtDateYear(p.order_date)}</td>
+                    <td>{p.po_no}</td>
+                    <td>{p.status}</td>
+                    <td className="num">{qty(p.qty_ordered, u)}</td>
+                    <td className="num">{qty(p.qty_received, u)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="muted small">From the PO export. Cancelled POs are left out.</p>
+        </details>
+      )}
+
       {r.open_orders.length > 0 && (
         <details>
           <summary>{r.open_orders.length} customer orders booked, not shipped ({qty(r.open_orders_qty, u)})</summary>
@@ -244,8 +275,18 @@ function facts(r) {
   if (r.late_po_qty > 0)
     out.push(["Late PO", `${n0(r.late_po_qty)} on the water, date unknown, not counted. If it lands: ${
       r.runout_with_late_pos ? `covered until ${fmtDate(r.runout_with_late_pos)}` : "covered for 6+ months"}.`]);
-  if (r.suggested_order)
-    out.push(["Suggested order", `About ${qty(r.suggested_order, u)} (${r.vendor_code}: ${r.lead_days}-day lead time + ${r.safety_days} days' cushion). A starting point.`]);
+  if (r.suggested_order) {
+    const m = r.suggestion_math;
+    out.push(["Suggested order", m
+      ? `About ${qty(r.suggested_order, u)}. Ordered today, it lands ${fmtDate(m.lands)}. From then to ${fmtDate(m.covers_until)} ` +
+        `(${m.cover_days / 7} weeks + ${m.safety_days / 7} weeks' cushion) you'll sell about ${n0(m.need)}, and you'll still have ` +
+        `${n0(m.have_when_it_lands)} on that day: ${n0(m.need)} − ${n0(m.have_when_it_lands)} ≈ ${qty(r.suggested_order, u)}, rounded up.`
+      : `About ${qty(r.suggested_order, u)}. A starting point.`]);
+  }
+  const h = r.order_history_summary;
+  if (h)
+    out.push(["Last ordered", `${fmtDateYear(h.last_order_date)}: ${qty(h.last_order_qty, u)}. ` +
+      `You usually order about ${qty(h.typical_qty, u)}` + (h.typical_gap_days ? `, every ~${Math.round(h.typical_gap_days / 7)} weeks.` : ".")]);
   return out;
 }
 

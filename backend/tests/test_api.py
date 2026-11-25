@@ -51,3 +51,14 @@ def test_mark_and_undo_already_ordered(client):
 @pytest.mark.parametrize("payload", [{"days": 0}, {"days": -3}, {"days": 365}, {"note": "x" * 201}])
 def test_mark_rejects_bad_input(client, payload):
     assert client.post("/api/items/CAL-RING/handled", json=payload).status_code == 422
+
+
+def test_order_history_and_suggestion_working(client):
+    body = client.get("/api/items/SHR-1620").json()
+    hist = body["order_history"]
+    assert len(hist) == 7 and hist[0]["order_date"] == "2026-11-02"      # newest first
+    assert all(p["status"] != "Cancelled" for p in hist)
+    s = body["order_history_summary"]
+    assert s["last_order_qty"] == 600 and s["orders"] == 7
+    m = body["suggestion_math"]                                            # the number Dana sees adds up
+    assert body["suggested_order"] == -(-(m["need"] - m["have_when_it_lands"]) // 1)

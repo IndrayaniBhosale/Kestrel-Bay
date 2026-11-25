@@ -176,6 +176,24 @@ def clean_open_pos(items: pd.DataFrame):
     return df[cols].reset_index(drop=True), notes
 
 
+def clean_po_history(items: pd.DataFrame) -> pd.DataFrame:
+    """Every past and current PO line, so Dana can see what she ordered before.
+    Kept in its own table: the forecast and run-out math still only use open POs."""
+    df = pd.read_csv(DATA_DIR / "purchase_orders.csv")
+    df["item_code"] = norm_code(df["item_code"])
+    df = df[df["status"] != "Cancelled"]                       # never happened
+    df = df[~df.duplicated(["po_no", "line_no"], keep="first")]  # same two duplicates as above
+    df = df.merge(items[["item_code", "sell_uom", "lb_per_case"]], on="item_code", how="left")
+    for col in ["qty_ordered", "qty_received"]:
+        df[col] = [to_sell_uom(q, u, s, l) for q, u, s, l in
+                   zip(df[col], df["uom"], df["sell_uom"], df["lb_per_case"])]
+    df["order_date"] = pd.to_datetime(df["order_date"]).dt.date
+    df["expected_date"] = pd.to_datetime(df["expected_date"]).dt.date
+    cols = ["po_no", "line_no", "vendor_code", "item_code", "order_date", "expected_date",
+            "status", "qty_ordered", "qty_received"]
+    return df[cols].reset_index(drop=True)
+
+
 def parse_mixed_dates(s: pd.Series) -> pd.Series:
     """Most dates are 2026-01-04, but 51 January rows are 01/04/2026 (month first:
     the ship dates follow 1-3 days later and the order numbers fit January)."""
@@ -239,4 +257,5 @@ def load_all():
     vendors = clean_vendors()
     notes = pd.DataFrame(n1 + n2 + n3 + n4, columns=["rule", "rows", "explanation"])
     return {"items": items, "lots": lots, "open_pos": pos, "sales": sales,
-            "open_orders": open_orders, "vendors": vendors, "data_notes": notes}
+            "open_orders": open_orders, "vendors": vendors, "data_notes": notes,
+            "po_history": clean_po_history(items)}

@@ -3,18 +3,20 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 
 load_dotenv()
 
 engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
 
-DATA_TABLES = ["items", "lots", "open_pos", "sales", "open_orders", "vendors", "data_notes"]
+DATA_TABLES = ["items", "lots", "open_pos", "sales", "open_orders", "vendors", "data_notes", "po_history"]
+OPTIONAL_TABLES = {"po_history"}  # added later; the app still starts before the first reload
 DATE_COLUMNS = {
     "lots": ["pack_date", "expiry_date", "usable_until", "received_date"],
     "open_pos": ["order_date", "vendor_expected_date"],
     "sales": ["order_date"],
     "open_orders": ["order_date"],
+    "po_history": ["order_date", "expected_date"],
 }
 
 CREATE_HANDLED = """
@@ -38,7 +40,11 @@ def write_tables(tables: dict[str, pd.DataFrame]):
 def read_tables() -> dict[str, pd.DataFrame]:
     out = {}
     with engine.connect() as conn:
+        existing = set(inspect(conn).get_table_names())
         for name in DATA_TABLES:
+            if name in OPTIONAL_TABLES and name not in existing:
+                out[name] = pd.DataFrame()
+                continue
             df = pd.read_sql_table(name, conn)
             for col in DATE_COLUMNS.get(name, []):
                 df[col] = pd.to_datetime(df[col]).dt.date
